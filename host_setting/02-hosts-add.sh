@@ -5,7 +5,9 @@ set -e
 echo "检查当前hosts文件内容:"
 cat /etc/hosts
 
-echo "添加集群中其他主机"
+echo "===================="
+
+echo "现在,添加集群中其他主机"
 # 定义集群主机映射变量
 HOSTS_CONTENT="\
 100.64.0.4 k8s-master
