@@ -48,6 +48,16 @@ Note: In k8s, different components work differently as follows:
 | cri-docker.service | CRI Implementation | No (on-demand) |
 | kubelet            | K8s Node Core | Yes |
 
+## k8s core tools 
+
+
+| Tools      | Category/Purpose                                         |
+| ------- | ----------------------------------------------- |
+| kubeadm | Cluster Bootstrapping / Cluster Management Tool |
+| kubelet | Node Agent / Node Component                     |
+| kubectl | CLI / Client Tool                               |
+
+
 
 ## master
 
