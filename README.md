@@ -40,12 +40,13 @@ reference: [aliyun mirror docker-ce](https://developer.aliyun.com/mirror/docker-
 
 Note: In k8s, different components work differently as follows:
 
-| 组件                 | 角色        | 是否需要一直 running |
+
+| Components | Character | Whether you need to run all the time |
 | ------------------ | --------- | -------------- |
-| docker.service     | Docker 引擎 | 是              |
-| cri-docker.socket  | CRI 入口    | 是（监听）          |
-| cri-docker.service | CRI 实现    | 否（按需）          |
-| kubelet            | K8s 节点核心  | 是              |
+| docker.service     | Docker Engine | Yes |
+| cri-docker.socket  | CRI Portal | Yes (Monitoring) |
+| cri-docker.service | CRI Implementation | No (on-demand) |
+| kubelet            | K8s Node Core | Yes |
 
 
 ## master
