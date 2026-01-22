@@ -26,7 +26,17 @@ reference: [aliyun mirror docker-ce](https://developer.aliyun.com/mirror/docker-
    [binary files](https://github.com/Mirantis/cri-dockerd/releases)
    [systemd files](https://github.com/Mirantis/cri-dockerd/tree/master/packaging/systemd)
 
-2. 
+2. before installation, make sure that the dir is like:
+
+```bash
+├── cri-dockerd
+│   ├── cri-dockerd
+│   └── packaging
+│       └── systemd
+│           ├── cri-docker.service
+│           └── cri-docker.socket
+└── cri-dockerd-0.3.22.amd64.tgz
+```
 
 
 
