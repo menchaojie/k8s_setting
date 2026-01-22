@@ -20,6 +20,16 @@ reference: [aliyun mirror docker-ce](https://developer.aliyun.com/mirror/docker-
 
 3. used for commen users, not root
 
+## cri-dockerd
+
+1. down load the files. If it is difficult to download though terminal, can down load from browser.
+   [binary files](https://github.com/Mirantis/cri-dockerd/releases)
+   [systemd files](https://github.com/Mirantis/cri-dockerd/tree/master/packaging/systemd)
+
+2. 
+
+
+
 ## master
 
 tx-server
