@@ -18,5 +18,5 @@ git push
 echo ">>>>>>>>>>>>>>>>>>>>当前Git状态:"
 git status
 echo ">>>>>>>>>>>>>>>>>>>>当前Git log:"
-git log
+git log|head -n 5
 echo "===============本次操作结束===================="
