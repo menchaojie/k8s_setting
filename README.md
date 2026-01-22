@@ -26,7 +26,7 @@ reference: [aliyun mirror docker-ce](https://developer.aliyun.com/mirror/docker-
    [binary files](https://github.com/Mirantis/cri-dockerd/releases)
    [systemd files](https://github.com/Mirantis/cri-dockerd/tree/master/packaging/systemd)
 
-2. before installation, make sure that the dir is like:
+2. Before installation, make sure that the directory looks like this:
 
 ```bash
 ├── cri-dockerd
@@ -38,6 +38,14 @@ reference: [aliyun mirror docker-ce](https://developer.aliyun.com/mirror/docker-
 └── cri-dockerd-0.3.22.amd64.tgz
 ```
 
+Note: In k8s, different components work differently as follows:
+
+| 组件                 | 角色        | 是否需要一直 running |
+| ------------------ | --------- | -------------- |
+| docker.service     | Docker 引擎 | 是              |
+| cri-docker.socket  | CRI 入口    | 是（监听）          |
+| cri-docker.service | CRI 实现    | 否（按需）          |
+| kubelet            | K8s 节点核心  | 是              |
 
 
 ## master
