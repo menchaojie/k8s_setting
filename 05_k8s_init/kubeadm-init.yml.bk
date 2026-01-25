@@ -1,0 +1,72 @@
+# kubeadm 的 API 版本
+# v1beta4 表示这是 kubeadm 配置的第 4 个 beta 版本
+# 版本号只和 kubeadm 本身有关，和 Kubernetes 主版本不是一回事
+apiVersion: kubeadm.k8s.io/v1beta4
+
+# 这是一个“初始化配置”
+# InitConfiguration 只在 kubeadm init 阶段使用
+kind: InitConfiguration
+
+# 本地 API Server 端点配置
+# 决定 kube-apiserver 在本机“怎么对外暴露”
+localAPIEndpoint:
+  # advertiseAddress 是“通告地址”
+  # kube-apiserver 会告诉集群中其他组件：
+  #   “我是通过这个 IP 被访问的”
+  # 一般填控制平面的内网 IP
+  # advertiseAddress: 192.168.1.20
+  advertiseAddress: 100.64.0.4
+
+  # kube-apiserver 监听的端口
+  # Kubernetes 的固定约定端口，默认就是 6443
+  bindPort: 6443
+
+# 节点注册相关配置
+# 控制当前这台机器如何作为一个 Node 加入集群
+nodeRegistration:
+  # CRI Socket 的路径
+  # kubelet 通过这个 Unix socket 和容器运行时通信
+  # 这里使用的是 cri-dockerd（Docker 的 CRI 适配层）
+  criSocket: unix:///var/run/cri-dockerd.sock
+
+  # Node 在 Kubernetes 集群里的名字
+  # 会出现在 kubectl get nodes 里
+  # 通常设置为主机名，便于识别
+  # name: co50-ubuntu
+  name: tx-server
+
+---
+# --- 是 YAML 的文档分隔符
+# 表示下面是“另一个 kubeadm 配置对象”
+
+# 同样属于 kubeadm 的 API
+apiVersion: kubeadm.k8s.io/v1beta4
+
+# 这是“集群级配置”
+# ClusterConfiguration 描述的是整个 Kubernetes 集群的全局属性
+kind: ClusterConfiguration
+
+# Kubernetes 版本号
+# kubeadm 会按这个版本拉取组件镜像（apiserver / controller-manager 等）
+# 必须和 kubeadm 支持的版本范围匹配
+kubernetesVersion: v1.35.0
+
+# 镜像仓库地址
+# kubeadm 默认使用 registry.k8s.io
+# 这里改成了阿里云个人镜像仓库，用于国内加速或私有环境
+imageRepository: crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech
+
+# 集群网络配置
+# 这是“逻辑网络”，不是物理网卡
+networking:
+  # Pod 子网
+  # 所有 Pod 的 IP 都会从这个网段里分配
+  # 必须和你之后安装的 CNI 插件配置一致
+  # 10.244.0.0/16 是 Flannel 的经典默认值
+  podSubnet: 10.244.0.0/16
+
+  # Service 子网
+  # ClusterIP Service 使用的虚拟 IP 段
+  # 一般不需要改，除非和现有网络冲突
+  serviceSubnet: 10.96.0.0/12
+

@@ -1,26 +1,25 @@
-[init] Using Kubernetes version: v1.35.0
+[init] Using Kubernetes version: v1.28.15
 [preflight] Running pre-flight checks
 [preflight] Pulling images required for setting up a Kubernetes cluster
 [preflight] This might take a minute or two, depending on the speed of your internet connection
-[preflight] You can also perform this action beforehand using 'kubeadm config images pull'
+[preflight] You can also perform this action in beforehand using 'kubeadm config images pull'
 [certs] Using certificateDir folder "/etc/kubernetes/pki"
 [certs] Generating "ca" certificate and key
 [certs] Generating "apiserver" certificate and key
-[certs] apiserver serving cert is signed for DNS names [kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local tx-server] and IPs [10.96.0.1 100.64.0.4]
+[certs] apiserver serving cert is signed for DNS names [k8s-master kubernetes kubernetes.default kubernetes.default.svc kubernetes.default.svc.cluster.local] and IPs [10.96.0.1 100.64.0.4]
 [certs] Generating "apiserver-kubelet-client" certificate and key
 [certs] Generating "front-proxy-ca" certificate and key
 [certs] Generating "front-proxy-client" certificate and key
 [certs] Generating "etcd/ca" certificate and key
 [certs] Generating "etcd/server" certificate and key
-[certs] etcd/server serving cert is signed for DNS names [localhost tx-server] and IPs [100.64.0.4 127.0.0.1 ::1]
+[certs] etcd/server serving cert is signed for DNS names [k8s-master localhost] and IPs [100.64.0.4 127.0.0.1 ::1]
 [certs] Generating "etcd/peer" certificate and key
-[certs] etcd/peer serving cert is signed for DNS names [localhost tx-server] and IPs [100.64.0.4 127.0.0.1 ::1]
+[certs] etcd/peer serving cert is signed for DNS names [k8s-master localhost] and IPs [100.64.0.4 127.0.0.1 ::1]
 [certs] Generating "etcd/healthcheck-client" certificate and key
 [certs] Generating "apiserver-etcd-client" certificate and key
 [certs] Generating "sa" key and public key
 [kubeconfig] Using kubeconfig folder "/etc/kubernetes"
 [kubeconfig] Writing "admin.conf" kubeconfig file
-[kubeconfig] Writing "super-admin.conf" kubeconfig file
 [kubeconfig] Writing "kubelet.conf" kubeconfig file
 [kubeconfig] Writing "controller-manager.conf" kubeconfig file
 [kubeconfig] Writing "scheduler.conf" kubeconfig file
@@ -30,26 +29,16 @@
 [control-plane] Creating static Pod manifest for "kube-controller-manager"
 [control-plane] Creating static Pod manifest for "kube-scheduler"
 [kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
-[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/instance-config.yaml"
-[patches] Applied patch of type "application/strategic-merge-patch+json" to target "kubeletconfiguration"
 [kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
 [kubelet-start] Starting the kubelet
-[wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests"
-[kubelet-check] Waiting for a healthy kubelet at http://127.0.0.1:10248/healthz. This can take up to 4m0s
-[kubelet-check] The kubelet is healthy after 500.903979ms
-[control-plane-check] Waiting for healthy control plane components. This can take up to 4m0s
-[control-plane-check] Checking kube-apiserver at https://100.64.0.4:6443/livez
-[control-plane-check] Checking kube-controller-manager at https://127.0.0.1:10257/healthz
-[control-plane-check] Checking kube-scheduler at https://127.0.0.1:10259/livez
-[control-plane-check] kube-controller-manager is healthy after 1.503907141s
-[control-plane-check] kube-scheduler is healthy after 2.231841594s
-[control-plane-check] kube-apiserver is healthy after 4.002403904s
+[wait-control-plane] Waiting for the kubelet to boot up the control plane as static Pods from directory "/etc/kubernetes/manifests". This can take up to 4m0s
+[apiclient] All control plane components are healthy after 6.004466 seconds
 [upload-config] Storing the configuration used in ConfigMap "kubeadm-config" in the "kube-system" Namespace
 [kubelet] Creating a ConfigMap "kubelet-config" in namespace kube-system with the configuration for the kubelets in the cluster
 [upload-certs] Skipping phase. Please see --upload-certs
-[mark-control-plane] Marking the node tx-server as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
-[mark-control-plane] Marking the node tx-server as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
-[bootstrap-token] Using token: m2b6qb.1bgohwmtbm1j4dbt
+[mark-control-plane] Marking the node k8s-master as control-plane by adding the labels: [node-role.kubernetes.io/control-plane node.kubernetes.io/exclude-from-external-load-balancers]
+[mark-control-plane] Marking the node k8s-master as control-plane by adding the taints [node-role.kubernetes.io/control-plane:NoSchedule]
+[bootstrap-token] Using token: gxl7ww.nv9gyjvdnl043x3w
 [bootstrap-token] Configuring bootstrap tokens, cluster-info ConfigMap, RBAC Roles
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to get nodes
 [bootstrap-token] Configured RBAC rules to allow Node Bootstrap tokens to post CSRs in order for nodes to get long term certificate credentials
@@ -78,5 +67,5 @@ Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
 
 Then you can join any number of worker nodes by running the following on each as root:
 
-kubeadm join 100.64.0.4:6443 --token m2b6qb.1bgohwmtbm1j4dbt \
-	--discovery-token-ca-cert-hash sha256:bc9f34263f40f2ef532c468cdb3c900c965c2dfb1d056649f0245f602c941d0e 
+kubeadm join 100.64.0.4:6443 --token gxl7ww.nv9gyjvdnl043x3w \
+	--discovery-token-ca-cert-hash sha256:3cb2fc532b410349c248469560cd6b5984147836c8f8de8dff78aaef0211aca4 

@@ -126,8 +126,8 @@ check_port 10250
 # 10. Kubernetes 镜像拉取验证（致命）
 # --------------------------------------------------
 IMAGE_REPO="crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech"
-K8S_VERSION="v1.35.0"
-TEST_IMAGE="$IMAGE_REPO/kube-apiserver:$K8S_VERSION"
+K8S_VERSION="3.9"
+TEST_IMAGE="$IMAGE_REPO/pause:$K8S_VERSION"
 
 echo "[INFO] 测试 Docker 镜像拉取：$TEST_IMAGE"
 
@@ -143,26 +143,46 @@ fi
 # --------------------------------------------------
 # 11. pause 镜像版本检查（Docker + cri-dockerd）
 # --------------------------------------------------
-echo "[INFO]===== 检查 CRI pause 镜像版本 ====="
+#
+# --------------------------------------------------
+# 11. pause 镜像版本检查（版本自适应）
+# --------------------------------------------------
+#
+echo "[INFO]===== 检查 CRI pause 镜像版本（自适应） ====="
 
-EXPECTED_PAUSE_IMAGE="crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech/pause:3.10.1"
 CRI_SOCKET="/var/run/cri-dockerd.sock"
 
 if ! command -v crictl &>/dev/null; then
   fail "crictl 未安装，无法检查 pause 镜像"
 else
+  # 1. 从 kubeadm 推导期望 pause 镜像
+  EXPECTED_PAUSE_IMAGE=$(kubeadm config images list 2>/dev/null \
+    | grep '/pause:' | head -n1)
+
+  if [[ -z "$EXPECTED_PAUSE_IMAGE" ]]; then
+    fail "无法从 kubeadm 获取期望的 pause 镜像"
+  else
+    ok "kubeadm 期望 pause 镜像: $EXPECTED_PAUSE_IMAGE"
+  fi
+
+  # 2. 从 cri-dockerd 读取当前 pause 镜像
   ACTUAL_PAUSE_IMAGE=$(crictl --runtime-endpoint "unix://${CRI_SOCKET}" info 2>/dev/null \
     | awk -F'"' '/sandboxImage/ {print $4}')
 
   if [[ -z "$ACTUAL_PAUSE_IMAGE" ]]; then
-    fail "无法获取当前 pause 镜像"
-  elif [[ "$ACTUAL_PAUSE_IMAGE" == "$EXPECTED_PAUSE_IMAGE" ]]; then
-    ok "pause 镜像正确：$ACTUAL_PAUSE_IMAGE"
+    fail "无法获取当前 CRI pause 镜像"
   else
-    fail "pause 镜像不匹配"
-    warn "当前: $ACTUAL_PAUSE_IMAGE"
+    echo "[INFO] 当前 CRI pause 镜像: $ACTUAL_PAUSE_IMAGE"
+  fi
+
+  # 3. 对比
+  if [[ "$EXPECTED_PAUSE_IMAGE" == "$ACTUAL_PAUSE_IMAGE" ]]; then
+    ok "pause 镜像与 kubeadm 期望一致"
+  else
+    warn "pause 镜像与 kubeadm 期望不一致"
     warn "期望: $EXPECTED_PAUSE_IMAGE"
-    warn "请先执行 sudo ./fix_cri_pause_version.sh"
+    warn "当前: $ACTUAL_PAUSE_IMAGE"
+    warn "建议：在 init 前统一 pause 镜像（可使用 fix_cri_pause_version.sh）"
   fi
 fi
 

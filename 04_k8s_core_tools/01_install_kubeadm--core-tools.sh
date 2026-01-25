@@ -1,26 +1,42 @@
 #!/usr/bin/env bash
-
 set -e
 
-echo ">>>>>>>>>>>>>>>>>>>>>>下载 gpg key:"
-curl -fsSL https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.35/deb/Release.key |sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+read -p "请输入 Kubernetes 主版本（例如 1.28, 1.35）: " K8S_VERSION
 
-echo ">>>>>>>>>>>>>>>>>>>>>增加 apt 源:"
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://mirrors.aliyun.com/kubernetes-new/core/stable/v1.35/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+if [[ ! "$K8S_VERSION" =~ ^1\.[0-9]+$ ]]; then
+  echo "❌ 版本格式错误，应类似：1.28"
+  exit 1
+fi
 
-echo ">>>>>>>>>>>>>>>>>>>>>apt 更新:"
+APT_VERSION="v${K8S_VERSION}"
+
+echo "================ Kubernetes ${APT_VERSION} 安装开始 ================"
+
+echo ">>> 创建 keyrings 目录"
+sudo mkdir -p /etc/apt/keyrings
+
+echo ">>> 下载 Kubernetes GPG key"
+curl -fsSL https://mirrors.aliyun.com/kubernetes-new/core/stable/${APT_VERSION}/deb/Release.key \
+  | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+echo ">>> 添加 Kubernetes apt 源"
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
+https://mirrors.aliyun.com/kubernetes-new/core/stable/${APT_VERSION}/deb/ /" \
+| sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+
+echo ">>> apt update"
 sudo apt-get update
 
-echo ">>>>>>>>>>>>>>>>>>>>>安装 kubelet kubeadm kubectl等核心工具:"
+echo ">>> 安装 kubelet kubeadm kubectl（锁定版本）"
 sudo apt-get install -y kubelet kubeadm kubectl
 
-echo ">>>>>>>>>>>>>>>>>>>验证 kubelet :"
-kubelet --version
+echo ">>> 锁定版本，防止被 apt upgrade 意外升级"
+sudo apt-mark hold kubelet kubeadm kubectl
 
-echo ">>>>>>>>>>>>>>>>>>>验证 kubeadm :"
-kubeadm version
+echo ">>> 验证版本"
+echo -n "kubelet:  "; kubelet --version
+echo -n "kubeadm:  "; kubeadm version -o short
+echo -n "kubectl:  "; kubectl version --client --short
 
-echo ">>>>>>>>>>>>>>>>>>>验证 kubectl :"
-kubectl version --client
+echo "================ Kubernetes ${APT_VERSION} 安装完成 ================"
 
-echo "=======================安装结束=========================="
