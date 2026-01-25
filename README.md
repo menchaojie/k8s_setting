@@ -57,6 +57,10 @@ Note: In k8s, different components work differently as follows:
 | kubelet | Node Agent / Node Component                     |
 | kubectl | CLI / Client Tool                               |
 
+## init
+
+make sure that all is OK after 01_init_k8s_preflight.sh execute
+
 
 
 ## master
