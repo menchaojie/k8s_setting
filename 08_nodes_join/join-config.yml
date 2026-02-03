@@ -1,0 +1,11 @@
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: "100.64.0.4:6443"
+    token: "gxl7ww.nv9gyjvdnl043x3w"
+    caCertHashes:
+      - "sha256:3cb2fc532b410349c248469560cd6b5984147836c8f8de8dff78aaef0211aca4"
+nodeRegistration:
+  criSocket: "unix:///var/run/cri-dockerd.sock"
+
