@@ -36,7 +36,7 @@ sudo apt-mark hold kubelet kubeadm kubectl
 echo ">>> 验证版本"
 echo -n "kubelet:  "; kubelet --version
 echo -n "kubeadm:  "; kubeadm version -o short
-echo -n "kubectl:  "; kubectl version --client --short
+echo -n "kubectl:  "; kubectl version --client
 
 echo "================ Kubernetes ${APT_VERSION} 安装完成 ================"
 
