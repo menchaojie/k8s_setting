@@ -123,51 +123,60 @@ check_port 6443
 check_port 10250
 
 # --------------------------------------------------
-# 10. Kubernetes 镜像拉取验证（致命）
+# 10 / 11. 按 kubeadm-init.yml 推导期望 pause，并验证拉取与 CRI 配置
 # --------------------------------------------------
-IMAGE_REPO="crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech"
-K8S_VERSION="3.9"
-TEST_IMAGE="$IMAGE_REPO/pause:$K8S_VERSION"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KUBEADM_CONFIG="${SCRIPT_DIR}/kubeadm-init.yml"
+DEFAULT_IMAGE_REPO="crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech"
 
-echo "[INFO] 测试 Docker 镜像拉取：$TEST_IMAGE"
-
-if docker pull "$TEST_IMAGE" >/dev/null 2>&1; then
-  ok "Kubernetes 镜像可正常拉取"
+IMAGE_REPO="$DEFAULT_IMAGE_REPO"
+K8S_VER=""
+if [[ -f "$KUBEADM_CONFIG" ]]; then
+  IMAGE_REPO="$(awk '/^[[:space:]]*imageRepository:/{print $2; exit}' "$KUBEADM_CONFIG")"
+  K8S_VER="$(awk '/^[[:space:]]*kubernetesVersion:/{print $2; exit}' "$KUBEADM_CONFIG")"
+  [[ -z "$IMAGE_REPO" ]] && IMAGE_REPO="$DEFAULT_IMAGE_REPO"
+  ok "读取配置: $KUBEADM_CONFIG"
+  echo "[INFO] imageRepository=$IMAGE_REPO"
+  [[ -n "$K8S_VER" ]] && echo "[INFO] kubernetesVersion=$K8S_VER"
 else
-  fail "Docker 无法拉取 Kubernetes 镜像"
+  warn "未找到 $KUBEADM_CONFIG，使用默认 imageRepository"
+fi
+
+# 用目标版本列出官方 pause，再换成个人仓前缀（避免 --config 混用 apiVersion 失败）
+if [[ -n "$K8S_VER" ]]; then
+  PAUSE_FROM_KUBEADM=$(kubeadm config images list --kubernetes-version="$K8S_VER" 2>/dev/null | grep '/pause:' | head -n1 || true)
+else
+  PAUSE_FROM_KUBEADM=$(kubeadm config images list 2>/dev/null | grep '/pause:' | head -n1 || true)
+fi
+
+PAUSE_TAG=""
+if [[ -n "$PAUSE_FROM_KUBEADM" ]]; then
+  PAUSE_TAG="${PAUSE_FROM_KUBEADM##*:}"
+fi
+[[ -z "$PAUSE_TAG" ]] && PAUSE_TAG="3.10.2"
+
+EXPECTED_PAUSE_IMAGE="${IMAGE_REPO}/pause:${PAUSE_TAG}"
+
+echo "[INFO] 测试 Docker 镜像拉取：$EXPECTED_PAUSE_IMAGE"
+if docker pull "$EXPECTED_PAUSE_IMAGE" >/dev/null 2>&1; then
+  ok "Kubernetes pause 镜像可正常拉取"
+else
+  fail "Docker 无法拉取 pause 镜像: $EXPECTED_PAUSE_IMAGE"
   warn "请确认："
   warn "1) docker login 私有仓库已完成"
-  warn "2) 镜像 tag 与 Kubernetes 版本一致"
+  warn "2) 已同步 pause:${PAUSE_TAG} 到个人仓"
   warn "3) 网络 / DNS / 防火墙"
 fi
-# --------------------------------------------------
-# 11. pause 镜像版本检查（Docker + cri-dockerd）
-# --------------------------------------------------
-#
-# --------------------------------------------------
-# 11. pause 镜像版本检查（版本自适应）
-# --------------------------------------------------
-#
-echo "[INFO]===== 检查 CRI pause 镜像版本（自适应） ====="
 
-CRI_SOCKET="/var/run/cri-dockerd.sock"
+echo "[INFO]===== 检查 CRI pause 镜像版本（自适应） ====="
 
 if ! command -v crictl &>/dev/null; then
   fail "crictl 未安装，无法检查 pause 镜像"
 else
-  # 1. 从 kubeadm 推导期望 pause 镜像
-  EXPECTED_PAUSE_IMAGE=$(kubeadm config images list 2>/dev/null \
-    | grep '/pause:' | head -n1)
+  ok "期望 pause 镜像（按 imageRepository + kubeadm tag）: $EXPECTED_PAUSE_IMAGE"
 
-  if [[ -z "$EXPECTED_PAUSE_IMAGE" ]]; then
-    fail "无法从 kubeadm 获取期望的 pause 镜像"
-  else
-    ok "kubeadm 期望 pause 镜像: $EXPECTED_PAUSE_IMAGE"
-  fi
-
-  # 2. 从 cri-dockerd 读取当前 pause 镜像
   ACTUAL_PAUSE_IMAGE=$(crictl --runtime-endpoint "unix://${CRI_SOCKET}" info 2>/dev/null \
-    | awk -F'"' '/sandboxImage/ {print $4}')
+    | awk -F'"' '/sandboxImage/ {print $4; exit}')
 
   if [[ -z "$ACTUAL_PAUSE_IMAGE" ]]; then
     fail "无法获取当前 CRI pause 镜像"
@@ -175,14 +184,19 @@ else
     echo "[INFO] 当前 CRI pause 镜像: $ACTUAL_PAUSE_IMAGE"
   fi
 
-  # 3. 对比
+  ACTUAL_PAUSE_TAG="${ACTUAL_PAUSE_IMAGE##*:}"
+
   if [[ "$EXPECTED_PAUSE_IMAGE" == "$ACTUAL_PAUSE_IMAGE" ]]; then
-    ok "pause 镜像与 kubeadm 期望一致"
+    ok "pause 镜像与期望完全一致"
+  elif [[ -n "$ACTUAL_PAUSE_TAG" && "$ACTUAL_PAUSE_TAG" == "$PAUSE_TAG" ]]; then
+    ok "pause tag 一致（${PAUSE_TAG}）；仓库前缀不同可接受（个人仓场景）"
+    echo "[INFO] 期望: $EXPECTED_PAUSE_IMAGE"
+    echo "[INFO] 当前: $ACTUAL_PAUSE_IMAGE"
   else
-    warn "pause 镜像与 kubeadm 期望不一致"
+    warn "pause 镜像与期望不一致"
     warn "期望: $EXPECTED_PAUSE_IMAGE"
     warn "当前: $ACTUAL_PAUSE_IMAGE"
-    warn "建议：在 init 前统一 pause 镜像（可使用 fix_cri_pause_version.sh）"
+    warn "建议：执行 ./04_manage_cri_pause_version.sh 对齐 pause:${PAUSE_TAG}"
   fi
 fi
 
