@@ -2,7 +2,8 @@ apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 
 localAPIEndpoint:
-  advertiseAddress: 100.64.0.4
+  # 本机 eth0 内网 IP（ip -br a）
+  advertiseAddress: 172.16.0.183
   bindPort: 6443
 
 nodeRegistration:
@@ -10,7 +11,7 @@ nodeRegistration:
   criSocket: unix:///var/run/cri-dockerd.sock
 
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 
 kubernetesVersion: v1.36.6
@@ -20,4 +21,3 @@ imageRepository: crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgte
 networking:
   podSubnet: 10.0.0.0/16
   serviceSubnet: 10.96.0.0/12
-
