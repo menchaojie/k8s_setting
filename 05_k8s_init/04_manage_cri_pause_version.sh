@@ -59,37 +59,49 @@ if [[ "$ACTION" == "2" ]]; then
   echo
   read -p "即将重载并重启 cri-dockerd，按 Enter 继续..."
 
-  sudo systemctl daemon-reexec
   sudo systemctl daemon-reload
+  sudo systemctl restart cri-docker.socket || true
   sudo systemctl restart "$SERVICE_NAME"
 
-  echo "[OK] cri-dockerd 已回滚为默认 pause 行为"
+  if systemctl is-active --quiet "$SERVICE_NAME"; then
+    echo "[OK] cri-dockerd 已回滚为默认 pause 行为，服务运行正常"
+  else
+    echo "[FAIL] 回滚后 cri-docker.service 未能成功启动"
+    systemctl status "$SERVICE_NAME" --no-pager || true
+    exit 1
+  fi
   exit 0
 fi
 
 #-------------------------------------------------
 # 模式 1：设置 / 修改 pause 版本
 #-------------------------------------------------
+IMAGE_REPO="crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech"
+
 echo
 echo "请选择 pause 镜像版本："
-echo "  1) pause:3.9   （Kubernetes 1.28 推荐）"
-echo "  2) pause:3.10  （Kubernetes 1.29 / 1.30）"
-echo "  3) pause:3.10.1（Kubernetes 1.35）"
-echo "  4) 自定义 pause 镜像"
+echo "  1) pause:3.9    （Kubernetes 1.28 推荐）"
+echo "  2) pause:3.10   （Kubernetes 1.29 / 1.30）"
+echo "  3) pause:3.10.1 （Kubernetes 1.35）"
+echo "  4) pause:3.10.2 （Kubernetes 1.36 推荐）"
+echo "  5) 自定义 pause 镜像"
 echo
-read -p "请输入选择 [1-4]: " PAUSE_CHOICE
+read -p "请输入选择 [1-5]: " PAUSE_CHOICE
 
 case "$PAUSE_CHOICE" in
   1)
-    PAUSE_IMAGE="crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech/pause:3.9"
+    PAUSE_IMAGE="${IMAGE_REPO}/pause:3.9"
     ;;
   2)
-    PAUSE_IMAGE="crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech/pause:3.10"
+    PAUSE_IMAGE="${IMAGE_REPO}/pause:3.10"
     ;;
   3)
-    PAUSE_IMAGE="crpi-ckw9ia686aku4y4w.cn-shanghai.personal.cr.aliyuncs.com/tgtech/pause:3.10.1"
+    PAUSE_IMAGE="${IMAGE_REPO}/pause:3.10.1"
     ;;
   4)
+    PAUSE_IMAGE="${IMAGE_REPO}/pause:3.10.2"
+    ;;
+  5)
     read -p "请输入完整 pause 镜像地址: " PAUSE_IMAGE
     ;;
   *)
@@ -97,6 +109,11 @@ case "$PAUSE_CHOICE" in
     exit 1
     ;;
 esac
+
+if [[ -z "${PAUSE_IMAGE}" ]]; then
+  echo "[FAIL] pause 镜像地址不能为空"
+  exit 1
+fi
 
 echo
 echo "[INFO] 选定 pause 镜像为："
@@ -109,16 +126,12 @@ if [[ "$CONFIRM" != "yes" ]]; then
 fi
 
 #-------------------------------------------------
-# 构造期望的 drop-in 内容
+# 构造期望的 drop-in 内容（必须单行 ExecStart，避免 \ 续行被当成参数）
 #-------------------------------------------------
-EXPECTED_CONF=$(cat <<EOF
-[Service]
+EXPECTED_CONF="[Service]
 ExecStart=
-ExecStart=$CRI_BIN \\
-  --container-runtime-endpoint fd:// \\
-  --pod-infra-container-image=${PAUSE_IMAGE}
-EOF
-)
+ExecStart=${CRI_BIN} --container-runtime-endpoint fd:// --pod-infra-container-image=${PAUSE_IMAGE}
+"
 
 #-------------------------------------------------
 # 幂等判断
@@ -141,11 +154,11 @@ fi
 #-------------------------------------------------
 sudo mkdir -p "$DROPIN_DIR"
 
-sudo tee "$CONF_FILE" > /dev/null <<EOF
-$EXPECTED_CONF
-EOF
+printf '%s' "$EXPECTED_CONF" | sudo tee "$CONF_FILE" > /dev/null
 
 echo "[INFO] 已写入 $CONF_FILE"
+echo "[INFO] 内容如下："
+sed 's/^/  /' "$CONF_FILE"
 
 #-------------------------------------------------
 # 重载并重启
@@ -153,9 +166,16 @@ echo "[INFO] 已写入 $CONF_FILE"
 echo
 read -p "即将重载并重启 cri-dockerd，按 Enter 继续..."
 
-sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
+sudo systemctl restart cri-docker.socket || true
 sudo systemctl restart "$SERVICE_NAME"
 
-echo "[OK] cri-dockerd pause image 配置完成"
+if systemctl is-active --quiet "$SERVICE_NAME"; then
+  echo "[OK] cri-dockerd pause image 配置完成，服务运行正常"
+else
+  echo "[FAIL] cri-docker.service 未能成功启动，请检查："
+  echo "  systemctl status cri-docker.service --no-pager"
+  echo "  journalctl -u cri-docker.service -n 30 --no-pager"
+  exit 1
+fi
 
